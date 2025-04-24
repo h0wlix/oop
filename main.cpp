@@ -57,6 +57,23 @@ private:
     }
 protected:
     bool BeerWithAlcohol; // Алькогольное пиво или безалкогольное (1 - алкогольное, 0 безалкогольное)
+    void PrepareForAction() {
+        PrintType();
+        cout << " : ";
+        CheckAlcoholContent();
+        cout << " : ";
+        OpenBottle();
+        cout << " : ";
+    }
+
+    virtual void PrintType() = 0;
+    virtual void OpenBottle() = 0;
+
+    void CheckAlcoholContent() {
+        if(BeerWithAlcohol) cout << "ALCOHOLIC";
+        else cout << "NON-ALCOHOLIC";
+    }
+
 public:
      Beer(int ibu, double abv, double og, int ebc)
         : IBU(ibu), ABV(abv), OG(og), EBC(ebc), BeerWithAlcohol(false), BeerAction(nullptr)
@@ -66,28 +83,35 @@ public:
     }
 
     virtual ~Beer() {
-        if(BeerAction != nullptr) delete BeerAction;
+        if(BeerAction) delete BeerAction;
         cout << "Destroyed beer bottle...\n";
     }
+    void PerformAction();
+    void SetActionStrategy(BeerActionStrategy* action);
     bool IsAlcoholic() const { return BeerWithAlcohol; }
     int GetIBU() const { return IBU; }
     double GetABV() const { return ABV; }
     double GetOG() const { return OG; }
     int GetEBC() const { return EBC; }
-    void PerformAction() {
-    DoActionUsingStrategy();
+    };
+    void Beer::PerformAction() {
+        PrepareForAction();
+        DoActionUsingStrategy();
+        cout << endl;
     }
-    void SetActionStrategy(BeerActionStrategy* action){
-        if(BeerAction != nullptr) delete BeerAction;
-        BeerAction = action;
-    }
-};
+    void Beer::SetActionStrategy(BeerActionStrategy* action) {
+    if (BeerAction) delete BeerAction;
+    BeerAction = action;
+    };
 
 class PaleLager : public Beer
 {
 public:
     PaleLager(int ibu, double abv, double og, int ebc);
     ~PaleLager();
+protected:
+    void PrintType() override { cout << "PALE LAGER"; }
+    void OpenBottle() override { cout << "Twist-off cap opened"; }
 };
 
 PaleLager::PaleLager(int ibu, double abv, double og, int ebc):Beer(ibu, abv, og, ebc)
@@ -106,7 +130,9 @@ class NoAlcoholLager : public Beer
 public:
     NoAlcoholLager(int ibu, double abv, double og, int ebc);
     ~NoAlcoholLager();
-
+protected:
+    void PrintType() override { cout << "NON-ALCOHOLIC LAGER"; }
+    void OpenBottle() override { cout << "Easy-open cap removed"; }
 };
 
 NoAlcoholLager::NoAlcoholLager(int ibu, double abv, double og, int ebc):Beer(ibu, abv, og, ebc)
@@ -125,6 +151,9 @@ class Stout : public Beer
 public:
     Stout(int ibu, double abv, double og, int ebc);
     ~Stout();
+protected:
+    void PrintType() override { cout << "STOUT"; }
+    void OpenBottle() override { cout << "Pry-off cap opened"; }
 };
 
 Stout::Stout(int ibu, double abv, double og, int ebc):Beer(ibu, abv, og, ebc)
