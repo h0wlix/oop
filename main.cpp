@@ -3,67 +3,102 @@
 #include "patterns.h"
 using namespace std;
 
+class BeerActionStrategy {
+public:
+    virtual ~BeerActionStrategy() {}
+    virtual void Execute() = 0;
+};
+
+class DrinkStrategy:public BeerActionStrategy {
+public:
+    void Execute() override {cout << "Drinking the beer..\n";}
+};
+
+class PourOutStrategy:public BeerActionStrategy {
+public:
+    void Execute() override {cout << "Pouring out the beer...\n";}
+};
+
+class MakeSauceStrategy:public BeerActionStrategy {
+public:
+    void Execute() override {cout << "Making sauce with the beer...\n";}
+};
+
+enum class BeerActionType {
+    Drink,
+    PourOut,
+    MakeSauce
+};
+
+BeerActionStrategy* CreateBeerStrategy(BeerActionType type) {
+    switch(type){
+        case BeerActionType::Drink: return new DrinkStrategy();
+        case BeerActionType::PourOut: return new PourOutStrategy();
+        case BeerActionType::MakeSauce: return new MakeSauceStrategy();
+        default: return nullptr;
+    }
+}
+
 class Beer {
 private:
+    BeerActionStrategy* BeerAction;
     int IBU; // International Bitterness Units - горечь
     double ABV; // Alcohol by Volume - крепость
     double OG; // Original Gravity - плотность
     int EBC; //European Brewing Convention - цвет
+    void DoActionUsingStrategy() {
+        if(BeerAction == nullptr) {
+            cout << "No action!" ;
+            return;
+        }
+        else {
+            BeerAction->Execute();
+        }
+    }
 protected:
     bool BeerWithAlcohol; // Алькогольное пиво или безалкогольное (1 - алкогольное, 0 безалкогольное)
 public:
-    Beer(int ibu, double abv, double og, int ebc);
-    virtual ~Beer();
+     Beer(int ibu, double abv, double og, int ebc)
+        : IBU(ibu), ABV(abv), OG(og), EBC(ebc), BeerWithAlcohol(false), BeerAction(nullptr)
+    {
+        BeerWithAlcohol = (rand() % 10) < 7;
+        cout << "Created a beer...\n";
+    }
 
-    int GetIBU() const {return IBU;}
-    double GetABV() const {return ABV;}
-    double GetOG() const {return OG;}
-    int GetEBC() const {return EBC;}
-
-    virtual void Drinking() = 0;
-    virtual void PourOut() = 0;
-    virtual void MakeSauce() = 0;
+    virtual ~Beer() {
+        if(BeerAction != nullptr) delete BeerAction;
+        cout << "Destroyed beer bottle...\n";
+    }
+    bool IsAlcoholic() const { return BeerWithAlcohol; }
+    int GetIBU() const { return IBU; }
+    double GetABV() const { return ABV; }
+    double GetOG() const { return OG; }
+    int GetEBC() const { return EBC; }
+    void PerformAction() {
+    DoActionUsingStrategy();
+    }
+    void SetActionStrategy(BeerActionStrategy* action){
+        if(BeerAction != nullptr) delete BeerAction;
+        BeerAction = action;
+    }
 };
-Beer::Beer(int ibu, double abv, double og, int ebc):IBU(ibu), ABV(abv), OG(og), EBC(ebc), BeerWithAlcohol(false)
-{
-    cout << "Took a beer...\n" << endl;
-}
-Beer::~Beer()
-{
-    cout << "Removed the bottle of beer...\n" << endl;
-}
 
 class PaleLager : public Beer
 {
 public:
     PaleLager(int ibu, double abv, double og, int ebc);
     ~PaleLager();
-
-    void Drinking();
-    void PourOut();
-    void MakeSauce();
 };
 
 PaleLager::PaleLager(int ibu, double abv, double og, int ebc):Beer(ibu, abv, og, ebc)
 {
     BeerWithAlcohol = true;
     cout << "Taking a bottle of pale lager" << endl;
+    SetActionStrategy(CreateBeerStrategy(BeerActionType::Drink));
 }
 
 PaleLager::~PaleLager() {
-    cout << "Pale lager bottle removed" << endl;
-}
-
-void PaleLager::Drinking() {
-    cout << "Drinking pale lager...\n" << endl;
-}
-
-void PaleLager::PourOut() {
-    cout << "Pouring out pale lager...\n" << endl;
-}
-
-void PaleLager::MakeSauce() {
-    cout << "Making sauce with pale lager...\n" << endl;
+    cout << "Pale lager bottle removed\n" << endl;
 }
 
 class NoAlcoholLager : public Beer
@@ -72,31 +107,17 @@ public:
     NoAlcoholLager(int ibu, double abv, double og, int ebc);
     ~NoAlcoholLager();
 
-    void Drinking();
-    void PourOut();
-    void MakeSauce();
 };
 
 NoAlcoholLager::NoAlcoholLager(int ibu, double abv, double og, int ebc):Beer(ibu, abv, og, ebc)
 {
     BeerWithAlcohol = false;
     cout << "Taking a bottle of no alcohol lager" << endl;
+    SetActionStrategy(CreateBeerStrategy(BeerActionType::PourOut));
 }
 
 NoAlcoholLager::~NoAlcoholLager() {
     cout << "No alcohol lager bottle removed\n" << endl;
-}
-
-void NoAlcoholLager::Drinking() {
-    cout << "Drinking no alcohol lager...\n" << endl;
-}
-
-void NoAlcoholLager::PourOut() {
-    cout << "Pouring out no alcohol lager...\n" << endl;
-}
-
-void NoAlcoholLager::MakeSauce() {
-    cout << "Making sauce with no alcohol lager...\n" << endl;
 }
 
 class Stout : public Beer
@@ -104,33 +125,19 @@ class Stout : public Beer
 public:
     Stout(int ibu, double abv, double og, int ebc);
     ~Stout();
-
-    void Drinking();
-    void PourOut();
-    void MakeSauce();
 };
 
 Stout::Stout(int ibu, double abv, double og, int ebc):Beer(ibu, abv, og, ebc)
 {
     BeerWithAlcohol = true;
     cout << "Taking a bottle of stout" << endl;
+    SetActionStrategy(CreateBeerStrategy(BeerActionType::MakeSauce));
 }
 
 Stout::~Stout() {
     cout << "Stout bottle removed\n" << endl;
 }
 
-void Stout::Drinking() {
-    cout << "Drinking stout...\n" << endl;
-}
-
-void Stout::PourOut() {
-    cout << "Pouring out stout...\n" << endl;
-}
-
-void Stout::MakeSauce() {
-    cout << "Making sauce with stout...\n" << endl;
-}
 
 enum class TypeOfBeer : int {
     PaleLager = 1,
@@ -157,8 +164,7 @@ void Action(Iterator<Beer*> *iterator)
         !iterator->IsDone();
          iterator->Next())
     {
-        Beer* bottleOfBeer = iterator->GetCurrent();
-        bottleOfBeer->Drinking();
+        iterator->GetCurrent()->PerformAction();
     }
 }
 
